@@ -3,7 +3,7 @@
  * 
  * Compile: gcc -Wall -o slstress slstress.c
  * 
- * Copyright (C) 2016 Jiri Mencak (jmencak@redhat.com), Red Hat Inc
+ * Copyright (C) 2016 Jiri Mencak; Red Hat, Inc.
  *
  * slstress is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
