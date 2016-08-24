@@ -282,7 +282,7 @@ rand_string(char *str, unsigned int size)
 
 /* The main loop. */
 void
-syslog_spammer(int string_length, unsigned int usecs, char *tag)
+syslog_spammer(unsigned int string_length, unsigned int usecs, char *tag)
 {
   char *s=NULL;
 
