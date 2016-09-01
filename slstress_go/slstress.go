@@ -21,6 +21,12 @@ const (
 	char_idx_bits = 7 // 7 bits for 128 character charset
 	char_idx_mask = (1 << char_idx_bits) - 1
 	char_idx_max  = 63 / char_idx_bits // number of letter indices fitting in 63 bits
+
+	w_charset     = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	w_charset_len = len(w_charset)
+	w_sep         = " !(),-./:;<=>?" // word separators
+        w_max_letters = 10
+
 	PNAME         = "slstress"
 	D_LEN         = 256     // default string length
 	D_USECS       = 1000000 // default delay in microseconds
@@ -32,6 +38,7 @@ var msg_sent = 0 // messages sent to syslog
 /* Options */
 var p_seed = flag.Int("s", 0, "seed for Rand")
 var p_string_length = flag.Int("l", D_LEN, "length of a string being sent through syslog")
+var p_words = flag.Bool("w", false, "try to generate random \"words\" instead of random strings")
 var usecs = D_USECS // sleep delay microseconds between syslog() calls
 var tag = PNAME     // default tag
 
@@ -51,11 +58,37 @@ func rand_string_fast(n int) string {
 
 	for i, cache, remain := n-1, rand.Int63(), char_idx_max; i >= 0; {
 		if remain == 0 {
-			cache, remain = rand.Int63(), char_idx_max /* generate 63 random bits, for `char_idx_max' letters */
+			cache, remain = rand.Int63(), char_idx_max // generate 63 random bits, for `char_idx_max' letters
 		}
 		if idx := int(cache & char_idx_mask); idx < charset_len {
 			b[i] = charset[idx]
 			i--
+		}
+		cache >>= char_idx_bits
+		remain--
+	}
+
+	return string(b)
+}
+
+func rand_words_fast(n int) string {
+	b := make([]byte, n)
+
+        i, cache, remain := n-1, rand.Int63(), char_idx_max
+        word_boundary := (cache % w_max_letters) + 1
+	for ; i >= 0; {
+		if remain == 0 {
+			cache, remain = rand.Int63(), char_idx_max // generate 63 random bits, for `char_idx_max' letters
+		}
+		if idx := int(cache & char_idx_mask); idx < w_charset_len {
+			if word_boundary == 0 {
+				b[i] = ' '
+			        word_boundary = (cache % w_max_letters) + 1
+			} else {
+				b[i] = w_charset[idx]
+			}
+			i--
+	                word_boundary--
 		}
 		cache >>= char_idx_bits
 		remain--
@@ -139,14 +172,19 @@ func set_signals() {
 }
 
 func syslog_spammer(string_length int, usecs int, tag string) {
+	var rand_fn = rand_string_fast
 	rand.Seed(int64(*p_seed))
+
+	if(*p_words) {
+		rand_fn = rand_words_fast
+	}
 
 	conn, e := unix_syslog()
 	if e != nil {
 		stats_panic(e)
 	}
 	for true {
-		s := fmt.Sprintf("%s: %s", tag, rand_string_fast(*p_string_length))
+		s := fmt.Sprintf("%s: %s", tag, rand_fn(*p_string_length))
 
 		_, e := conn.Write([]byte(s))
 		if e != nil {
