@@ -191,6 +191,7 @@ func syslog_spammer(string_length int, usecs int, tag string) {
 			stats_panic(e)
 		}
 		msg_sent++
+		fmt.Fprintf(os.Stderr, "%d sleep\n", usecs)
 		time.Sleep(time.Duration(usecs) * time.Microsecond)
 	}
 }
@@ -203,14 +204,15 @@ func main() {
 	if len(os.Args) < 2 {
 		flag.Usage()
 		os.Exit(1)
-	} else {
-		usecs, e := strconv.Atoi(os.Args[len(os.Args)-1])
-		if e != nil {
-			fmt.Fprintf(os.Stderr, "<DELAY> `%s' not an integer\n", os.Args[1])
-			os.Exit(1)
-		}
-		fmt.Println(usecs)
 	}
+
+	usecs, e := strconv.Atoi(os.Args[len(os.Args)-1])
+	if e != nil {
+		fmt.Fprintf(os.Stderr, "<DELAY> `%s' not an integer\n", os.Args[1])
+		os.Exit(1)
+	}
+	fmt.Println(usecs)
+
 
 	/* Workhorse */
 	syslog_spammer(*p_string_length, usecs, tag)
