@@ -173,6 +173,7 @@ func set_signals() {
 
 func syslog_spammer(string_length int, usecs int, tag string) {
 	var rand_fn = rand_string_fast
+	var log_to_stdout = false
 	rand.Seed(int64(*p_seed))
 
 	if(*p_words) {
@@ -181,14 +182,20 @@ func syslog_spammer(string_length int, usecs int, tag string) {
 
 	conn, e := unix_syslog()
 	if e != nil {
-		stats_panic(e)
+		/* there was an error, log to stdout */
+		log_to_stdout = true
+		fmt.Fprintf(os.Stderr, "%s failed to connect to syslog, logging to stdout\n", PNAME)
 	}
 	for true {
 		s := fmt.Sprintf("%s: %s", tag, rand_fn(*p_string_length))
 
-		_, e := conn.Write([]byte(s))
-		if e != nil {
-			stats_panic(e)
+		if (log_to_stdout) {
+			fmt.Fprintf(os.Stdout, "%s\n", s)
+		} else {
+			_, e := conn.Write([]byte(s))
+			if e != nil {
+				stats_panic(e)
+			}
 		}
 		msg_sent++
 		time.Sleep(time.Duration(usecs) * time.Microsecond)
