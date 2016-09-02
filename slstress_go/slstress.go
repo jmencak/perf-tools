@@ -39,6 +39,7 @@ var msg_sent = 0 // messages sent to syslog
 var p_seed = flag.Int("s", 0, "seed for Rand")
 var p_string_length = flag.Int("l", D_LEN, "length of a string being sent through syslog")
 var p_words = flag.Bool("w", false, "try to generate random \"words\" instead of random strings")
+var p_quiet = flag.Bool("q", false, "do not print statistics")
 var usecs = D_USECS // sleep delay microseconds between syslog() calls
 var tag = PNAME     // default tag
 
@@ -115,6 +116,8 @@ func unix_syslog() (conn net.Conn, e error) {
 }
 
 func print_stats() {
+	if(*p_quiet) { return }
+
 	fmt.Printf("Messages sent: %d\n", msg_sent)
 	fmt.Printf("String length: %d\n", *p_string_length)
 	fmt.Printf("Delay (usecs): %d\n", usecs)
@@ -224,5 +227,5 @@ func main() {
 	/* Workhorse */
 	syslog_spammer(*p_string_length, usecs, tag)
 
-	print_stats()
+	if(*p_quiet == false) { print_stats() }
 }
