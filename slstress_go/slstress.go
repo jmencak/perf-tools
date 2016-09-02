@@ -212,7 +212,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "<DELAY> `%s' not an integer\n", os.Args[1])
 		os.Exit(1)
 	}
-	fmt.Println(usecs)
+//	fmt.Println(usecs)
 
 	/* Workhorse */
 	syslog_spammer(*p_string_length, usecs, tag)
