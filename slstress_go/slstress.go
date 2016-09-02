@@ -97,14 +97,14 @@ func rand_words_fast(n int) string {
 	return string(b)
 }
 
-func unix_syslog() (conn net.Conn, err error) {
+func unix_syslog() (conn net.Conn, e error) {
 	logTypes := []string{"unixgram", "unix"}
 	logPaths := []string{"/dev/log", "/var/run/syslog", "/var/run/log"}
 
 	for _, network := range logTypes {
 		for _, path := range logPaths {
-			conn, err := net.Dial(network, path)
-			if err != nil {
+			conn, e := net.Dial(network, path)
+			if e != nil {
 				continue
 			} else {
 				return conn, nil
@@ -196,6 +196,8 @@ func syslog_spammer(string_length int, usecs int, tag string) {
 }
 
 func main() {
+	var e error
+
 	set_signals()
 
 	parse_cmd_opts()
@@ -205,12 +207,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	usecs, e := strconv.Atoi(os.Args[len(os.Args)-1])
+	usecs, e = strconv.Atoi(os.Args[len(os.Args)-1])
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "<DELAY> `%s' not an integer\n", os.Args[1])
 		os.Exit(1)
 	}
-//	fmt.Println(usecs)
+	fmt.Println(usecs)
 
 	/* Workhorse */
 	syslog_spammer(*p_string_length, usecs, tag)
