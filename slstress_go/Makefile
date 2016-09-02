@@ -1,5 +1,4 @@
 PROGRAM=slstress
-BIN_DIR=bin
 
 all: $(PROGRAM)
 
