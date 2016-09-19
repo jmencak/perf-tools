@@ -40,6 +40,7 @@ var p_seed = flag.Int("s", 0, "seed for Rand")
 var p_string_length = flag.Int("l", D_LEN, "length of a string being sent through syslog")
 var p_words = flag.Bool("w", false, "try to generate random \"words\" instead of random strings")
 var p_quiet = flag.Bool("q", false, "do not print statistics")
+var p_stderr = flag.Bool("e", false, "output the message to standard error as well as to the system log")
 var usecs = D_USECS // sleep delay microseconds between syslog() calls
 var tag = PNAME     // default tag
 
@@ -199,6 +200,10 @@ func syslog_spammer(string_length int, usecs int, tag string) {
 			if e != nil {
 				stats_panic(e)
 			}
+		}
+		if (*p_stderr) {
+			/* also log to stderr option set */
+			fmt.Fprintf(os.Stderr, "%s\n", s)
 		}
 		msg_sent++
 		time.Sleep(time.Duration(usecs) * time.Microsecond)
