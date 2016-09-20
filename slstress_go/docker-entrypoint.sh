@@ -1,5 +1,6 @@
 #!/bin/sh
 # Written so that it can work even with busybox's "ash shell".
+# Entrypoint script for Load Generator Docker Image
 
 ProgramName=${0##*/}
 
@@ -67,7 +68,7 @@ define_timeout_bin()
 
 timeout_exit_status()
 {
-  local err="$1"
+  local err="${1:-$?}"
 
   case $err in
     124) # coreutil's return code for timeout
@@ -80,44 +81,39 @@ timeout_exit_status()
   esac
 }
 
-define_timeout_bin
+main()
+{
+  define_timeout_bin
 
-case "${RUN}" in
-  stress)
-    synchronize_pods
+  case "${RUN}" in
+    stress)
+      synchronize_pods
     
-    [[ "${STRESS_CPU}" ]] && STRESS_CPU="--cpu ${STRESS_CPU}"
-#    [[ "${STRESS_TIME}" ]] && STRESS_TIME="--timeout ${STRESS_TIME}"
-    $timeout \
-      stress ${STRESS_CPU}
-  ;;
-  slstress)
-    synchronize_pods
+      [ "${STRESS_CPU}" ] && STRESS_CPU="--cpu ${STRESS_CPU}"
+      $timeout \
+        stress ${STRESS_CPU}
+      ;;
 
-    $timeout \
-      /usr/local/bin/slstress.sh "$@" > *.log
+    slstress|logger)
+      local gateway=$(/sbin/ip route|awk '/default/ { print $3 }')
+      local slstress_log=/tmp/${HOSTNAME}-${gateway}.log
 
-#    if [[ "${pbench_dir}" == *pbench-user-benchmark* ]]; then
-#      # Copy results back to Cluster Loader host in PBench dir
-#      scp *.jtl *.log *.png ${GUN}:${pbench_dir}
-#    fi
-  ;;
-  logger)
-    synchronize_pods
+      synchronize_pods
+      $timeout \
+        /usr/local/bin/slstress.sh "$@" > ${slstress_log}
+        $(timeout_exit_status) || exit $?	# slstress failed, exit
+        scp -p ${slstress_log} ${GUN}:${PBENCH_DIR}
+    ;;
 
-    $timeout \
-      /usr/local/bin/slstress.sh "$@"
+    jmeter)
+      die 1 "${RUN} not supported."
+    ;; 
 
-#    if [[ "${pbench_dir}" == *pbench-user-benchmark* ]]; then
-#      # Copy results back to Cluster Loader host in PBench dir
-#      scp *.jtl *.log *.png ${GUN}:${pbench_dir}
-#    fi
-  ;;
-  jmeter)
-    die 1 "${RUN} not supported."
-  ;; 
-  *)
-    die 1 "Need to specify what to run."
-  ;;
-esac
-timeout_exit_status
+    *)
+      die 1 "Need to specify what to run."
+    ;;
+  esac
+  timeout_exit_status
+}
+
+main
