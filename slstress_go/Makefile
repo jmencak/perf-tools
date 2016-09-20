@@ -12,7 +12,7 @@ fmt format: $(PROGRAM).go
 	go fmt $<
 
 docker: $(PROGRAM) Dockerfile
-	(docker build -t $(PROGRAM) .)
+	(docker build -t jmencak/$(PROGRAM) .)
 
 strip:
 	strip $(PROGRAM)
