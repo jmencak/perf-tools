@@ -119,9 +119,9 @@ func unix_syslog() (conn net.Conn, e error) {
 func print_stats() {
 	if(*p_quiet) { return }
 
-	fmt.Printf("Messages sent: %d\n", msg_sent)
-	fmt.Printf("String length: %d\n", *p_string_length)
-	fmt.Printf("Delay (usecs): %d\n", usecs)
+	fmt.Fprintf(os.Stdout, "Messages sent: %d\n", msg_sent)
+	fmt.Fprintf(os.Stdout, "String length: %d\n", *p_string_length)
+	fmt.Fprintf(os.Stdout, "Delay (usecs): %d\n", usecs)
 }
 
 func sig_caught_usr1(sigChan chan os.Signal) {
