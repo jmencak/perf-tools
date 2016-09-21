@@ -9,6 +9,6 @@ FROM scratch
 MAINTAINER Jiri Mencak
 COPY ./slstress-root /
 COPY ./slstress /usr/bin/slstress
-COPY ./slstress.sh /usr/local/bin/
+COPY ./logger.sh /usr/local/bin/
 COPY ./docker-entrypoint.sh /
 CMD ["/docker-entrypoint.sh"]

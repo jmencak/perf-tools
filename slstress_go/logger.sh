@@ -3,6 +3,7 @@
 ProgramName=${0##*/}
 
 # Global variables #############################################################
+RUN=${RUN:-${ProgramName%.sh}}
 LOGGING_DELAY=${LOGGING_DELAY:-1000000}	# delay $LOGGING_DELAY microseconds before sending another log line
 LOGGING_LINE_LENGTH=${LOGGING_LINE_LENGTH:-80}
 
@@ -40,26 +41,12 @@ main_logger()
     logger ${log_string}
     usleep ${LOGGING_DELAY}
   done
-
-  return 0
-}
-
-main_slstress()
-{
-  slstress \
-    -l ${LOGGING_LINE_LENGTH} \
-    -w \
-    ${LOGGING_DELAY}
-
-  return 0
 }
 
 case "$RUN" in
   logger)
     main_logger "$@"
   ;;
-  slstress)
-    main_slstress "$@"
-  ;;
+
   *) die 1 "mode \`$RUN' not supported"
 esac

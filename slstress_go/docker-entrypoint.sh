@@ -88,13 +88,13 @@ main()
   case "${RUN}" in
     stress)
       synchronize_pods
-    
+ 
       [ "${STRESS_CPU}" ] && STRESS_CPU="--cpu ${STRESS_CPU}"
       $timeout \
         stress ${STRESS_CPU}
       ;;
 
-    slstress|logger)
+    slstress)
       local gateway=$(/sbin/ip route|awk '/default/ { print $3 }')
       local slstress_log=/tmp/${HOSTNAME}-${gateway}.log
 
@@ -102,7 +102,21 @@ main()
       $timeout \
         /usr/local/bin/slstress.sh "$@" > ${slstress_log}
         $(timeout_exit_status) || exit $?	# slstress failed, exit
-        scp -p ${slstress_log} ${GUN}:${PBENCH_DIR}
+
+      scp -p ${slstress_log} ${GUN}:${PBENCH_DIR}
+    ;;
+
+    logger)
+      local gateway=$(/sbin/ip route|awk '/default/ { print $3 }')
+      local slstress_log=/tmp/${HOSTNAME}-${gateway}.log
+
+      synchronize_pods
+      $timeout \
+        /usr/local/bin/logger.sh "$@"
+
+      $(timeout_exit_status) || exit $?	# slstress failed, exit
+
+      scp -p ${slstress_log} ${GUN}:${PBENCH_DIR}
     ;;
 
     jmeter)
