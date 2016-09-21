@@ -2,6 +2,7 @@ PROGRAM=slstress
 EXE=$(PROGRAM)$(EXESUF)
 
 CC=gcc
+#CC=diet gcc -s -O2
 
 all: $(PROGRAM)$(EXESUF)
 CCFLAGS=-Wall
