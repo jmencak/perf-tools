@@ -51,11 +51,11 @@ option_item optionlist[] = {
 
 /* Global variables. */
 const char charset[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+unsigned long msg_sent = 0;		/* messages sent to syslog */
 
 /* Options. */
 unsigned int help = 0;			/* 0: no help; 1: basic help; ... */
 unsigned int seed = 0;			/* seed for srand() */
-unsigned long msg_sent = 0;		/* messages sent to syslog */
 unsigned int string_length = D_LEN;	/* length of a string being sent through syslog */
 unsigned int usecs = D_USECS;		/* sleep delay microseconds between syslog() calls */
 char *tag = PNAME;			/* default tag */
@@ -268,17 +268,52 @@ static char *
 rand_string(char *str, unsigned int size)
 {
   unsigned int n, key;
+  unsigned int modulo = sizeof charset - 1;
   
   if (size) {
     --size;
     for (n = 0; n < size; n++) {
-      key = rand() % (unsigned int) (sizeof charset - 1);
+      key = rand() % modulo;
       str[n] = charset[key];
     }
     str[size] = '\0';
   }
   return str;
 }
+
+/* Generate "random" string. */
+static char *
+rand_string_fast(char *str, unsigned int size)
+{
+  unsigned int n, key;
+  unsigned int modulo = sizeof charset - 1;
+  const unsigned int char_idx_bits = 7;				/* 7 bits for 128 character charset */
+  const unsigned int char_idx_mask = (1 << char_idx_bits) - 1;
+  const unsigned int char_idx_max  = 63 / char_idx_bits;	/* number of letter indices fitting in 63 bits */
+
+  if (size) {
+    --size;
+    for (n = 0; n < size; n++) {
+      key = rand() % modulo;
+      str[n] = charset[key];
+    }
+    str[size] = '\0';
+  }
+  return str;
+}
+
+void
+rand_perf() {
+  int i;
+  char *s=NULL;
+  s = (char *)calloc(string_length + 1, sizeof(char *));
+
+  for (i = 0; i <= 100000; i++) {
+    rand_string(s, 1000);
+  }
+  free(s);
+  exit(0);
+}  
 
 /* The main loop. */
 void
@@ -315,7 +350,7 @@ main(int argc, char *argv[])
 {
   int i;
   char *p_err;
-  
+
   /* Parse command line options */
   i = parse_cmd_opts(argc, argv);
 
