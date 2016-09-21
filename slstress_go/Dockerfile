@@ -2,8 +2,7 @@
 #
 # Sample run
 # ~~~~~~~~~~
-# docker run -it --rm jmencak/slstress /bin/timeout -t 60 slstress -w 10000000
-# docker run -it --rm jmencak/slstress /usr/local/bin/slstress.sh
+# docker run -it --rm jmencak/slstress /bin/timeout -t 60 /usr/local/bin/slstress -w 10000000
 
 FROM scratch
 MAINTAINER Jiri Mencak

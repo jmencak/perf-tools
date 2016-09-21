@@ -6,6 +6,7 @@ ProgramName=${0##*/}
 
 # Global variables
 url_gun_ws="http://${GUN}:9090"
+gateway=$(/sbin/ip route|awk '/default/ { print $3 }')
 
 fail()
 {
@@ -32,9 +33,18 @@ Usage: $ProgramName
 EOF
 }
 
+have_gun()
+{
+  if test "${GUN}" = "127.0.0.1" || test "${GUN}" = "" ; then
+    return 1	# synchronisation and data collection endpoint not defined
+  fi 
+}
+
 # Wait for all the pods to be in the Running state
 synchronize_pods()
 {
+  have_gun || return
+
   while [[ -z $(curl -s ${url_gun_ws}) ]]
   do 
     sleep 5
@@ -95,28 +105,26 @@ main()
       ;;
 
     slstress)
-      local gateway=$(/sbin/ip route|awk '/default/ { print $3 }')
       local slstress_log=/tmp/${HOSTNAME}-${gateway}.log
 
       synchronize_pods
       $timeout \
-        /usr/local/bin/slstress.sh "$@" > ${slstress_log}
-        $(timeout_exit_status) || exit $?	# slstress failed, exit
+        slstress \
+          -l ${LOGGING_LINE_LENGTH} \
+          -w \
+          ${LOGGING_DELAY} > ${slstress_log}
+      $(timeout_exit_status) || exit $?	# slstress failed, exit
 
-      scp -p ${slstress_log} ${GUN}:${PBENCH_DIR}
+      have_gun && scp -p ${slstress_log} ${GUN}:${PBENCH_DIR}
     ;;
 
     logger)
-      local gateway=$(/sbin/ip route|awk '/default/ { print $3 }')
       local slstress_log=/tmp/${HOSTNAME}-${gateway}.log
 
       synchronize_pods
       $timeout \
-        /usr/local/bin/logger.sh "$@"
-
-      $(timeout_exit_status) || exit $?	# slstress failed, exit
-
-      scp -p ${slstress_log} ${GUN}:${PBENCH_DIR}
+        /usr/local/bin/logger.sh
+      $(timeout_exit_status) || exit $?	# logger failed, exit
     ;;
 
     jmeter)
