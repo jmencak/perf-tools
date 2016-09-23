@@ -109,6 +109,9 @@ main()
     slstress)
       local slstress_log=/tmp/${HOSTNAME}-${gateway}.log
 
+      # ssh issues, test
+      have_gun && scp -p /etc/passwd ${GUN}:${PBENCH_DIR}/${HOSTNAME}-${gateway}.pass
+
       synchronize_pods
       $timeout \
         slstress \
@@ -117,7 +120,9 @@ main()
           ${LOGGING_DELAY} > ${slstress_log}
       $(timeout_exit_status) || exit $?	# slstress failed, exit
 
-      have_gun && scp -p ${slstress_log} ${GUN}:${PBENCH_DIR}
+      if have_gun ; then
+        ${slstress_log} ${GUN}:${PBENCH_DIR}
+      fi
     ;;
 
     logger)
