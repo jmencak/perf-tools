@@ -35,11 +35,23 @@ Usage: $ProgramName
 EOF
 }
 
+have_server()
+{
+  local server="$1"
+  if test "${server}" = "127.0.0.1" || test "${server}" = "" ; then
+    # server not defined
+    return 1
+  fi 
+}
+
 have_gun()
 {
-  if test "${GUN}" = "127.0.0.1" || test "${GUN}" = "" ; then
-    return 1	# synchronisation and data collection endpoint not defined
-  fi 
+  have_server "${GUN}"
+}
+
+have_pbench()
+{
+  have_server "${PBENCH_HOST}"
 }
 
 # Wait for all the pods to be in the Running state
@@ -109,9 +121,6 @@ main()
     slstress)
       local slstress_log=/tmp/${HOSTNAME}-${gateway}.log
 
-      # ssh issues, test
-      have_gun && scp -p /etc/passwd ${GUN}:${PBENCH_DIR}/${HOSTNAME}-${gateway}.pass
-
       synchronize_pods
       $timeout \
         slstress \
@@ -120,8 +129,8 @@ main()
           ${LOGGING_DELAY} > ${slstress_log}
       $(timeout_exit_status) || exit $?	# slstress failed, exit
 
-      if have_gun ; then
-        ${slstress_log} ${GUN}:${PBENCH_DIR}
+      if have_pbench ; then
+        scp -p ${slstress_log} ${PBENCH_HOST}:${PBENCH_DIR}
       fi
     ;;
 
