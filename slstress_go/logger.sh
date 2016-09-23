@@ -1,4 +1,5 @@
 #!/bin/sh
+# Written so that it can work even with busybox's "ash shell".
 
 ProgramName=${0##*/}
 
@@ -41,7 +42,7 @@ define_sleep()
 
     # have sleep that suports real numbers, don't rely on 'bc' being available
     sleep_bin=sleep
-    expr ${LOGGING_DELAY} + 0 >/dev/null 2>&1 || die "LOGGING_DELAY not an integer"
+    expr $LOGGING_DELAY + 0 >/dev/null 2>&1 || die "LOGGING_DELAY not an integer"
     LOGGING_DELAY=`printf "%06d" $LOGGING_DELAY | sed 's|^\(.*\)\(......\)$|\1.\2|'`
   }
 }
@@ -51,9 +52,9 @@ main_logger()
   charset='[:alnum:] \t'
   while true
   do 
-    log_string=`tr -cd "$charset" < /dev/urandom | head -c ${LOGGING_LINE_LENGTH}`
-    logger ${log_string}
-    $sleep_bin ${LOGGING_DELAY}
+    log_string=`tr -cd "$charset" < /dev/urandom | head -c $LOGGING_LINE_LENGTH`
+    logger "$log_string"
+    $sleep_bin $LOGGING_DELAY
   done
 }
 
