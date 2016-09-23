@@ -6,7 +6,9 @@ ProgramName=${0##*/}
 
 # Global variables
 url_gun_ws="http://${GUN}:9090"
-gateway=$(/sbin/ip route|awk '/default/ { print $3 }')
+#gateway=$(/sbin/ip route|awk '/default/ { print $3 }')	# sometimes there is no /sbin/ip ...
+gw_hex=$(grep ^eth0 /proc/net/route | head -1 | awk '{print $3}')
+gateway=$(printf "%d.%d.%d.%d" 0x${gw_hex:6:2} 0x${gw_hex:4:2} 0x${gw_hex:2:2} 0x${gw_hex:0:2})
 
 fail()
 {
