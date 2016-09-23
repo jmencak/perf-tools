@@ -7,7 +7,7 @@ import (
 	"fmt"       // Printf()
 	"math/rand" // Rand()
 	"net"       // net.Conn
-	"os"        // os.Exit(), os.Signal, ...
+	"os"        // os.Exit(), os.Signal, os.Stderr, ...
 	"os/signal" // signal's handling
 	"strconv"   // Atoi()
 	"syscall"   // signal's handling
