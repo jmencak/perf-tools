@@ -59,7 +59,7 @@ synchronize_pods()
 {
   have_gun || return
 
-  while [[ -z $(curl -s ${url_gun_ws}) ]]
+  while [ -z $(curl -s ${url_gun_ws}) ]
   do 
     sleep 5
     fail "${url_gun_ws} not ready"
@@ -153,7 +153,7 @@ main()
       ((JMETER_TPS*=60))
 
       # Add router IP & hostnames to hosts file
-      [[ "${ROUTER_IP}" ]] && echo "${ROUTER_IP} ${TARGET_HOST}" >> /etc/hosts
+      [ "${ROUTER_IP}" ] && echo "${ROUTER_IP} ${TARGET_HOST}" >> /etc/hosts
 
       # Wait for Cluster Loader start signal webservice
       synchronize_pods
