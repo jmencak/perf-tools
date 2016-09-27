@@ -59,7 +59,7 @@ synchronize_pods()
 {
   have_gun || return
 
-  while [[ -z $(curl -s ${url_gun_ws}) ]]
+  while [ -z $(curl -s "${url_gun_ws}") ]
   do 
     sleep 5
     fail "${url_gun_ws} not ready"
