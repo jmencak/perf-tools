@@ -7,7 +7,9 @@
 FROM scratch
 MAINTAINER Jiri Mencak
 COPY ./slstress-root /
-COPY ./slstress /usr/bin/slstress
+COPY ./slstress /usr/local/bin/slstress
 COPY ./logger.sh /usr/local/bin/
 COPY ./docker-entrypoint.sh /
+#RUN sed -i '/^StrictHostKeyChecking.*/d' /etc/ssh/ssh_config && \
+#    sed -i '$a StrictHostKeyChecking no' /etc/ssh/ssh_config
 CMD ["/docker-entrypoint.sh"]
