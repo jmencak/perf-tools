@@ -17,7 +17,7 @@ RUN mkdir -p /opt/jmeter && \
 
 # Setup slstress
 RUN curl -Ls https://raw.githubusercontent.com/jmencak/perf-tools/master/bin/x86-64/slstress > \
-        /usr/bin/slstress && chmod 755 /usr/bin/slstress
+        /usr/bin/slstress && chmod 755 /usr/local/bin/slstress
 RUN curl -Ls https://raw.githubusercontent.com/jmencak/perf-tools/master/slstress_go/logger.sh > \
         /usr/local/bin/logger.sh && chmod 755 /usr/local/bin/logger.sh
 
