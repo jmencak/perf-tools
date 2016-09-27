@@ -116,6 +116,7 @@ main()
       [ "${STRESS_CPU}" ] && STRESS_CPU="--cpu ${STRESS_CPU}"
       $timeout \
         stress ${STRESS_CPU}
+      $(timeout_exit_status) || die $? "${RUN} failed: $?"
       ;;
 
     slstress)
@@ -127,7 +128,7 @@ main()
           -l ${LOGGING_LINE_LENGTH} \
           -w \
           ${LOGGING_DELAY} > ${slstress_log}
-      $(timeout_exit_status) || exit $?	# slstress failed, exit
+      $(timeout_exit_status) || die $? "${RUN} failed: $?"
 
       if have_pbench ; then
         scp -p ${slstress_log} ${PBENCH_HOST}:${PBENCH_DIR}
@@ -140,7 +141,7 @@ main()
       synchronize_pods
       $timeout \
         /usr/local/bin/logger.sh
-      $(timeout_exit_status) || exit $?	# logger failed, exit
+      $(timeout_exit_status) || die $? "${RUN} failed: $?"
     ;;
 
     jmeter)
@@ -166,7 +167,7 @@ main()
         -Jipaddr5=${TARGET[4]} -Jipaddr6=${TARGET[5]} -Jipaddr7=${TARGET[6]} \
         -Jipaddr8=${TARGET[7]} -Jipaddr9=${TARGET[8]} -Jport=${TARGET_PORT} \
         -Jresults_file="${results_filename}".jtl -l "${results_filename}".jtl \
-        -j "${results_filename}".log -Jgun="${GUN}"
+        -j "${results_filename}".log -Jgun="${GUN}" || die $? "${RUN} failed: $?"
 
       have_pbench && scp -p *.jtl *.log *.png ${PBENCH_HOST}:${PBENCH_DIR}
     ;; 
