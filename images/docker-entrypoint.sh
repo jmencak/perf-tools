@@ -168,7 +168,7 @@ main()
         -Jresults_file="${results_filename}".jtl -l "${results_filename}".jtl \
         -j "${results_filename}".log -Jgun="${GUN}"
 
-      have_pbench && scp -p *.jtl *.log *.png ${slstress_log} ${GUN}:${PBENCH_DIR}
+      have_pbench && scp -p *.jtl *.log *.png ${GUN}:${PBENCH_DIR}
     ;; 
 
     *)
