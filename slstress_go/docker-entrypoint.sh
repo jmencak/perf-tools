@@ -6,37 +6,32 @@ ProgramName=${0##*/}
 
 # Global variables
 url_gun_ws="http://${GUN}:9090"
-#gateway=$(/sbin/ip route|awk '/default/ { print $3 }')	# sometimes there is no /sbin/ip ...
 gw_hex=$(grep ^eth0 /proc/net/route | head -1 | awk '{print $3}')
+#gateway=$(/sbin/ip route|awk '/default/ { print $3 }')	# sometimes there is no /sbin/ip ...
 gateway=$(printf "%d.%d.%d.%d" 0x${gw_hex:6:2} 0x${gw_hex:4:2} 0x${gw_hex:2:2} 0x${gw_hex:0:2})
 
-fail()
-{
+fail() {
   echo $@ >&2
 }
 
-warn()
-{
+warn() {
   fail "$ProgramName: $@"
 }
 
-die()
-{
+die() {
   local err=$1
   shift
   fail "$ProgramName: $@"
   exit $err
 }
 
-usage()
-{
+usage() {
   cat <<EOF 1>&2
 Usage: $ProgramName
 EOF
 }
 
-have_server()
-{
+have_server() {
   local server="$1"
   if test "${server}" = "127.0.0.1" || test "${server}" = "" ; then
     # server not defined
@@ -44,44 +39,31 @@ have_server()
   fi 
 }
 
-have_gun()
-{
-  have_server "${GUN}"
-}
-
-have_pbench()
-{
-  have_server "${PBENCH_HOST}"
-}
-
 # Wait for all the pods to be in the Running state
-synchronize_pods()
-{
-  have_gun || return
+synchronize_pods() {
+  have_server "${GUN}" || return
 
-  while [ -z $(curl -s "${url_gun_ws}") ]
-  do 
+  while [ -z $(curl -s "${url_gun_ws}") ] ; do 
     sleep 5
     fail "${url_gun_ws} not ready"
   done
 }
 
 # basic checks for toybox/busybox/coreutils timeout
-define_timeout_bin()
-{
-  test "${RUN_TIMEOUT}" || return	# timeout empty, do not define it and just return
+define_timeout_bin() {
+  test "${RUN_TIME}" || return	# timeout empty, do not define it and just return
 
   timeout -t 0 /bin/sleep 0 >/dev/null 2>&1
 
   case $? in
     0)   # we have a busybox timeout with '-t' option for number of seconds
-       timeout="timeout -t ${RUN_TIMEOUT}"
+       timeout="timeout -t ${RUN_TIME}"
     ;;
     1)   # we have toybox's timeout without the '-t' option for number of seconds
-       timeout="timeout ${RUN_TIMEOUT}"
+       timeout="timeout ${RUN_TIME}"
     ;;
     125) # we have coreutil's timeout without the '-t' option for number of seconds
-       timeout="timeout ${RUN_TIMEOUT}"
+       timeout="timeout ${RUN_TIME}"
     ;;
     *)   # couldn't find timeout or unknown version
        warn "running without timeout"
@@ -90,8 +72,7 @@ define_timeout_bin()
   esac
 }
 
-timeout_exit_status()
-{
+timeout_exit_status() {
   local err="${1:-$?}"
 
   case $err in
@@ -105,8 +86,7 @@ timeout_exit_status()
   esac
 }
 
-main()
-{
+main() {
   define_timeout_bin
 
   case "${RUN}" in
@@ -130,7 +110,7 @@ main()
           ${LOGGING_DELAY} > ${slstress_log}
       $(timeout_exit_status) || die $? "${RUN} failed: $?"
 
-      if have_pbench ; then
+      if have_server "${PBENCH_HOST}" ; then
         scp -p ${slstress_log} ${PBENCH_HOST}:${PBENCH_DIR}
       fi
     ;;
