@@ -110,8 +110,8 @@ main() {
           ${LOGGING_DELAY} > ${slstress_log}
       $(timeout_exit_status) || die $? "${RUN} failed: $?"
 
-      if have_server "${PBENCH_HOST}" ; then
-        scp -p ${slstress_log} ${PBENCH_HOST}:${PBENCH_DIR}
+      if have_server "${GUN}" ; then
+        scp -p ${slstress_log} ${GUN}:${PBENCH_DIR}
       fi
     ;;
 
