@@ -4,6 +4,7 @@ import (
 	"strconv"   // strconv
 	"log"	    // log.Fatal()
 	"io"	    // io.WriteString()
+	"io/ioutil" // ioutil.ReadFile()
 	"flag"      // command-line options parsing
 	"net/http"  // http server
 	"os"        // os.Exit(), os.Signal, os.Stderr, ...
@@ -15,6 +16,7 @@ import (
 /* Constants */
 const (
 	PNAME         = "gotime"
+	DOC_ROOT      = "."
 )
 
 /* Global variables */
@@ -23,17 +25,20 @@ var requests = 0
 /* Options */
 var p_verbose = flag.Bool("v", false, "verbose mode")
 var p_sleep = flag.Int("s", 5, "sleep between checks")
-var p_req_quit = flag.Int("n", 0, "quit after receiving #n requests (0: never quit)")
+var p_req_quit = flag.Int("n", 0, "quit after receiving #n GOTIME requests (0: never quit)")
 var p_port = flag.Int("p", 9090, "port to listen on")
+
+var p_doc_root = DOC_ROOT // document root
 
 func parse_cmd_opts() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] <COMMAND> [<ARGS>...]\n", PNAME)
-		fmt.Fprintf(os.Stderr, "Example: %s -v -- file -f /tmp/gotime\n\n", PNAME)
+		fmt.Fprintf(os.Stderr, "Example: %s -r /var/www/html -v -- file -f /tmp/gotime\n\n", PNAME)
 		fmt.Fprintf(os.Stderr, "Options:\n")
 
 		flag.PrintDefaults()
 	}
+	flag.StringVar(&p_doc_root, "r", p_doc_root, "path to gotime document root")
 	flag.Parse() // to execute the command-line parsing
 }
 
@@ -49,15 +54,16 @@ func run_cmd_args(cmd string, args []string) (string, error) {
 	return string(out), err
 }
 
-func gotime(w http.ResponseWriter, req *http.Request) {
+func http_srv_gotime(w http.ResponseWriter, req *http.Request) {
+	if *p_verbose {
+		log.Printf("Received %d. request %q\n", requests, req.URL.Path)
+	}
+
 	requests++
 	responseString := "GOTIME"
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("Content-Length", strconv.Itoa(len(responseString)))
 	io.WriteString(w, responseString)
-	if *p_verbose {
-		log.Printf("Received %d. request %q\n", requests, req.URL.Path)
-	}
 
 	if *p_req_quit != 0 && requests >= *p_req_quit {
 		f, canFlush := w.(http.Flusher)
@@ -77,9 +83,29 @@ func gotime(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func http_srv_file(w http.ResponseWriter, req *http.Request) {
+	status := http.StatusOK
+
+	if *p_verbose {
+		log.Printf("Received %d. request %q\n", requests, req.URL.Path)
+	}
+
+	data, err := ioutil.ReadFile(p_doc_root + req.URL.Path)
+	if err != nil {
+		log.Printf("error reading %v: %v", req.URL.Path, err)
+		status = http.StatusNotFound	// 404
+		data = []byte("404 Not Found")
+	}
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+	w.Write(data)
+}
+
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", gotime)
+	mux.HandleFunc("/GOTIME", http_srv_gotime)
+	mux.HandleFunc("/", http_srv_file)	// catch-all to serve files/configuration
 
 	parse_cmd_opts()
 
@@ -108,7 +134,7 @@ func main() {
 
 	log.Printf("Listening on port %d\n", *p_port)
 	if *p_req_quit != 0 {
-		log.Printf("Blocking until receiving %d requests.\n", *p_req_quit)
+		log.Printf("Blocking until receiving %d GOTIME requests.\n", *p_req_quit)
 	} else {
 		log.Printf("Blocking forever.\n")
 	}
