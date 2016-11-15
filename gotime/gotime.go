@@ -10,7 +10,6 @@ import (
 	"os"        // os.Exit(), os.Signal, os.Stderr, ...
 	"fmt"       // Printf()
 	"os/exec"   // exec.Command()
-	"time"      // Sleep()
 )
 
 /* Constants */
@@ -18,14 +17,20 @@ const (
 	PNAME         = "gotime"
 	DOC_ROOT      = "."
 )
+const ( // states
+	S_INIT        = 0
+	S_RACE        = 1
+	S_FINISHED    = 2
+)
 
 /* Global variables */
-var requests = 0
+var clients_running = 0		// number of clients running (even after some have finished)
+var clients_finished = 0	// number of clients that finished
+var state = S_INIT
 
 /* Options */
 var p_verbose = flag.Bool("v", false, "verbose mode")
-var p_sleep = flag.Int("s", 5, "sleep between checks")
-var p_req_quit = flag.Int("n", 0, "quit after receiving #n GOTIME requests (0: never quit)")
+var p_req_quit = flag.Int("n", 0, "quit after receiving #n gotime/finish requests (0: never quit)")
 var p_port = flag.Int("p", 9090, "port to listen on")
 
 var p_doc_root = DOC_ROOT // document root
@@ -54,18 +59,71 @@ func run_cmd_args(cmd string, args []string) (string, error) {
 	return string(out), err
 }
 
-func http_srv_gotime(w http.ResponseWriter, req *http.Request) {
-	if *p_verbose {
-		log.Printf("Received %d. request %q\n", requests, req.URL.Path)
+func http_srv_gotime_start(w http.ResponseWriter, req *http.Request) {
+	var responseString = "GO"
+
+	if state == S_INIT {
+		/* haven't given gotime so far */
+		_, err := run_cmd_args(flag.Args()[0],flag.Args()[1:])
+//		if *p_verbose {
+//			log.Printf("stdout: %s\n", cmd_out)
+//		}
+		if err == nil {
+			// command succeeded (return status 0)
+			state = S_RACE
+		} else {
+			// command failed
+			responseString = "NOGO"
+			if *p_verbose {
+				log.Printf("`%s' failed, not ready to give a go\n", flag.Args()[0])
+			}
+		}
 	}
 
-	requests++
-	responseString := "GOTIME"
+	if state == S_RACE {
+		/* race is on */
+		if *p_req_quit != 0 && clients_running == *p_req_quit {
+			/* already received *p_req_quit requests, what is this extra client! */
+			responseString = "NOGO"
+			if *p_verbose {
+				log.Printf("Extra client detected, already received %d requests to start, sending NOGO\n", *p_req_quit)
+			}
+		} else {
+			clients_running++
+			if *p_verbose {
+				log.Printf("Received %d. request %q\n", clients_running, req.URL.Path)
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Length", strconv.Itoa(len(responseString)))
+	io.WriteString(w, responseString)
+}
+
+func http_srv_gotime_finish(w http.ResponseWriter, req *http.Request) {
+	var responseString = "OK"
+
+	if clients_running < (clients_finished + 1) {
+		/* haven't given a go ahead so far, ignore this request */
+		responseString = "KO"
+		if *p_verbose {
+			log.Printf("Out of order request for finish, %d/%d (running/finished)\n", clients_running, clients_finished)
+		}
+	} else {
+		/* a valid request from a client that finished */
+		clients_finished++
+		if *p_verbose {
+			log.Printf("%d/%d clients finished\n", clients_finished, *p_req_quit)
+		}
+	}
+
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("Content-Length", strconv.Itoa(len(responseString)))
 	io.WriteString(w, responseString)
 
-	if *p_req_quit != 0 && requests >= *p_req_quit {
+	if *p_req_quit != 0 && clients_finished == *p_req_quit && state == S_RACE {
+		state = S_FINISHED
 		f, canFlush := w.(http.Flusher)
 		if canFlush {
 			f.Flush()
@@ -86,15 +144,21 @@ func http_srv_gotime(w http.ResponseWriter, req *http.Request) {
 func http_srv_file(w http.ResponseWriter, req *http.Request) {
 	status := http.StatusOK
 
+	if req.URL.Path == "/" {
+		// for compatibility with the original WLG
+		http_srv_gotime_start(w, req)
+		return
+	}
+
 	if *p_verbose {
-		log.Printf("Received %d. request %q\n", requests, req.URL.Path)
+		log.Printf("Received request %q\n", req.URL.Path)
 	}
 
 	data, err := ioutil.ReadFile(p_doc_root + req.URL.Path)
 	if err != nil {
 		log.Printf("error reading %v: %v", req.URL.Path, err)
 		status = http.StatusNotFound	// 404
-		data = []byte("404 Not Found")
+		data = []byte("")		// return empty string for default values
 	}
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -103,10 +167,6 @@ func http_srv_file(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/GOTIME", http_srv_gotime)
-	mux.HandleFunc("/", http_srv_file)	// catch-all to serve files/configuration
-
 	parse_cmd_opts()
 
 	if len(flag.Args()) < 1 {
@@ -114,27 +174,16 @@ func main() {
 		os.Exit(1)
 	}
 
-//	fmt.Fprintf(os.Stdout, "cmd=%s, arguments=%s\n", flag.Args()[0], flag.Args()[1:])
+	mux := http.NewServeMux()
+	mux.HandleFunc("/gotime/start", http_srv_gotime_start)
+	mux.HandleFunc("/gotime/finish", http_srv_gotime_finish)
+	mux.HandleFunc("/", http_srv_file)	// catch-all to serve files/configuration
 
-	for true {
-		_, err := run_cmd_args(flag.Args()[0],flag.Args()[1:])
-//		if *p_verbose {
-//			log.Printf("stdout: %s\n", cmd_out)
-//		}
-		if err == nil {
-			// command succeeded (return status 0)
-			break
-		}
-		// command failed
-		if *p_verbose {
-			log.Printf("`%s' failed, sleeping %d\n", flag.Args()[0], *p_sleep)
-		}
-		time.Sleep(time.Duration(*p_sleep) * time.Second)
-	}
+//	fmt.Fprintf(os.Stdout, "cmd=%s, arguments=%s\n", flag.Args()[0], flag.Args()[1:])
 
 	log.Printf("Listening on port %d\n", *p_port)
 	if *p_req_quit != 0 {
-		log.Printf("Blocking until receiving %d GOTIME requests.\n", *p_req_quit)
+		log.Printf("Blocking until receiving %d gotime/finish requests.\n", *p_req_quit)
 	} else {
 		log.Printf("Blocking forever.\n")
 	}
