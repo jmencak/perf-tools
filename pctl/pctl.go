@@ -41,6 +41,9 @@ func percentile(r io.Reader, stdout io.Writer, stderr io.Writer) error {
 	sort.Sort(numbers)
 	l := len(numbers)
 
+//	for i := 1; i <= 100; i++ {
+//		printPercentileN(stdout, &numbers, l, i, true)
+//	}
 	printPercentileN(stdout, &numbers, l, 90, false)
 	printPercentileN(stdout, &numbers, l, 95, true)
 	printPercentileN(stdout, &numbers, l, 99, true)
@@ -50,7 +53,7 @@ func percentile(r io.Reader, stdout io.Writer, stderr io.Writer) error {
 }
 
 func percentileN(numbers *sort.Float64Slice, l, n int) float64 {
-	i := l*n/100 - 1
+	i := l*(n-1)/100
 	ns := *numbers
 
 	return ns[i]
