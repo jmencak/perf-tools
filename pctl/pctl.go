@@ -69,6 +69,10 @@ func percentile(r io.Reader, stdout io.Writer, stderr io.Writer) error {
 
 		numbers = append(numbers, f)
 	}
+	if len(numbers) == 0 {
+		fmt.Fprintf(os.Stderr, "no input data\n")
+		os.Exit(1)
+	}
 
 	sort.Sort(numbers)
 	l := len(numbers)
@@ -97,6 +101,7 @@ func percentileN(numbers *sort.Float64Slice, l int, n float64) float64 {
 		fmt.Fprintf(os.Stderr, "`%e' too low, no numbers fit the criteria, raise the percentile or use -l\n", n)
 		os.Exit(1)
 	}
+	fmt.Fprintf(os.Stderr, "%d\n", i)
 	return ns[i]
 }
 
