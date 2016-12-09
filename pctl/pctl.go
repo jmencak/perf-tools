@@ -101,7 +101,6 @@ func percentileN(numbers *sort.Float64Slice, l int, n float64) float64 {
 		fmt.Fprintf(os.Stderr, "`%e' too low, no numbers fit the criteria, raise the percentile or use -l\n", n)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stderr, "%d\n", i)
 	return ns[i]
 }
 
