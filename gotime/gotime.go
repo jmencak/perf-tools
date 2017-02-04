@@ -175,7 +175,6 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", http_srv_gotime_start)			// compatibility with cluster-loader WLG
 	mux.HandleFunc("/gotime/start", http_srv_gotime_start)
 	mux.HandleFunc("/gotime/finish", http_srv_gotime_finish)
 	mux.HandleFunc("/", http_srv_file)	// catch-all to serve files/configuration
