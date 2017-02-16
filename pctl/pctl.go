@@ -29,7 +29,7 @@ var p_lenient = flag.Bool("l", false, "lenient mode, do not fail if percentile t
 func parse_cmd_opts() []string {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [list of percentiles to show]\n", PNAME)
-		fmt.Fprintf(os.Stderr, "Example: %s -l 68.27 95.45 99.73\n\n", PNAME)
+		fmt.Fprintf(os.Stderr, "Example:  seq 1 1000 | ./%s -d '\\n' 68.27 95.45 99.73\n\n", PNAME)
 		fmt.Fprintf(os.Stderr, "Options:\n")
 
 		flag.PrintDefaults()
